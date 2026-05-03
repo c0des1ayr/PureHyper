@@ -1,0 +1,1 @@
+dofile('LUA_HyperInit')

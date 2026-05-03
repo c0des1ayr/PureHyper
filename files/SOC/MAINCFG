@@ -1,0 +1,44 @@
+####### hypar tranferm
+
+State S_PLAY_HYPERTRNS_1
+SpriteName = SPR_PLAY
+SpriteFrame = SPR2_TRNS|A
+Duration = 14
+Next = S_PLAY_HYPERTRNS_2
+
+#
+State S_PLAY_HYPERTRNS_2
+SpriteName = SPR_PLAY
+SpriteFrame = SPR2_TRNS|A
+Duration = 3
+Next = S_PLAY_HYPERTRNS_3
+
+#
+State S_PLAY_HYPERTRNS_3
+SpriteName = SPR_PLAY
+SpriteFrame = SPR2_TRNS|A
+Duration = 2
+Next = S_PLAY_HYPERTRNS_4
+
+#
+State S_PLAY_HYPERTRNS_4
+SpriteName = SPR_PLAY
+SpriteFrame = SPR2_TRNS|A
+Duration = 2
+Next = S_PLAY_HYPERTRNS_5
+
+#
+State S_PLAY_HYPERTRNS_5
+SpriteName = SPR_PLAY
+SpriteFrame = SPR2_TRNS|A
+Duration = 2
+Next = S_PLAY_HYPERTRNS_6
+
+#
+State S_PLAY_HYPERTRNS_6
+SpriteName = SPR_PLAY
+SpriteFrame = SPR2_TRNS|A
+Duration = 30
+Next = S_PLAY_FALL
+
+#
