@@ -1,0 +1,59 @@
+assert(rawget(_G, 'PureHyper') ~= nil, 'PureHyper is already loaded, aborting...!')
+rawset(_G, 'PureHyper', {})
+PureHyper.hooklib = {}
+
+
+PureHyper.functions = {}
+local FUNCS = PureHyper.functions
+FUNCS.playerValid = function(p)
+    return p and p.valid == true and p.mo and p.mo.valid == true
+end
+FUNCS.superCheck = function(p)
+    if p.powers[pw_super] then
+        if p.hyper and p.hyper.capable then
+            return 2
+        end
+        return 1
+    end
+    return 0
+end
+FUNCS.validAndHyper = function(p)
+    if FUNCS.playerValid(p) == true and FUNCS.superCheck(p) == 2 then return true end
+    return false
+end
+FUNCS.mobjFlip = function(s)
+    if s and s.valid
+    and ((s.eflags&MFE_VERTICALFLIP) or (s.flags2&MF2_OBJECTFLIP)) then
+        return -1
+    end
+    return 1
+end
+
+
+PureHyper.tables = {}
+local TABLES = PureHyper.tables
+
+local tbl_tmp = {
+    S_PLAY_FALL, S_PLAY_SPRING, S_PLAY_ROLL, S_PLAY_JUMP, S_PLAY_ROLL
+}
+local tmp_tbl = {}
+for _,v in ipairs(tbl_tmp) do
+    tmp_tbl[v] = true
+end
+TABLES.StatesFlying = tmp_tbl
+tbl_tmp, tmp_tbl = nil, nil
+
+TABLES.FlyingChars = {
+    sonic = true,
+    rafael = true
+}
+
+
+local base = 'LUA_Hyper'
+local scripts = {
+    'Hooklib', 'IO', 'Freeslots', 'Flight', 'Switch', 'Core'
+}
+print('Initialization done, loading scripts...')
+for _, v in ipairs(scripts) do
+	dofile(base .. v)
+end
