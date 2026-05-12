@@ -5,6 +5,17 @@ PureHyper.hooklib = {}
 
 local FUNCS = {}
 PureHyper.functions = FUNCS
+---@param str string
+FUNCS.HYPrint = function(str)
+    print('\x82[PureHyper]\x80 ' .. str)
+end
+---@param str string
+FUNCS.HYPrintf = function(str)
+    local p = consoleplayer
+    if p
+    then CONS_Printf(p, '\x82[PureHyper]\x80 ' .. str)
+    end
+end
 FUNCS.playerValid = function(p)
     return p and p.valid == true and p.mo and p.mo.valid == true
 end
@@ -67,7 +78,7 @@ local base = 'LUA_Hyper'
 local scripts = {
     'Hooklib', 'IO', 'Freeslots', 'Flight', 'Switch', 'Core'
 }
-print('[PureHyper] Initialization done, loading scripts...')
+FUNCS.HYPrint('Initialization done, loading scripts...')
 for _, v in ipairs(scripts) do
 	dofile(base .. v)
 end

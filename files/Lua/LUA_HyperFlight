@@ -6,7 +6,6 @@ local SF = PH.tables.StatesFlying
 local HK = PH.hooklib
 local playerValid = PH.functions.playerValid
 local superCheck = PH.functions.superCheck
-local P_MobjFlip = PH.functions.mobjFlip
 HK.addHook('PlayerThink', function(p)
     -- Only FlyingChars can fly
     if not (playerValid(p) and FC[p.mo.skin] == true) then
@@ -67,7 +66,11 @@ HK.addHook('PlayerThink', function(p)
 
     -- You can't fall when you're flying
     if SF[p.mo.state] == true then
-        p.mo.state = S_PLAY_FLOAT
+		if p.speed >= FixedMul(p.runspeed, p.mo.scale) then
+			p.mo.state = S_PLAY_FLOAT_RUN
+		else
+            p.mo.state = S_PLAY_FLOAT
+		end
     end
 
     -- You're not jumping or spinning when you're flying
@@ -91,7 +94,7 @@ HK.addHook('PlayerThink', function(p)
     if (p.cmd.buttons & BT_JUMP) and not (p.cmd.buttons & BT_USE) and not p.eggflystart
     or (p.cmd.buttons & BT_JUMP) and not (p.cmd.buttons & BT_USE) then
         if not ((p.cmd.buttons & BT_CUSTOM1) and (p.eggc1helper == false)) then
-			P_SetObjectMomZ(p.mo, 1*FRACUNIT*P_MobjFlip(p.mo), true) -- Accelerate up
+			P_SetObjectMomZ(p.mo, 1*FRACUNIT, true) -- Accelerate up
 		end
     end
 
@@ -99,7 +102,7 @@ HK.addHook('PlayerThink', function(p)
     if (p.cmd.buttons & BT_USE) and not (p.cmd.buttons & BT_JUMP) then
 		if not ((p.cmd.buttons & BT_CUSTOM1) and (p.eggc1helper == false)) then
 			if p.eggflystart == false then
-				P_SetObjectMomZ(p.mo, -1*FRACUNIT*P_MobjFlip(p.mo), true)
+				P_SetObjectMomZ(p.mo, -1*FRACUNIT, true)
 			end
 		end
     end
@@ -111,11 +114,12 @@ HK.addHook('PlayerThink', function(p)
     -- If you're holding both, and you're allowed to boost, and you can pay for it, boost
     if (p.cmd.buttons & BT_JUMP) and (p.cmd.buttons & BT_USE)
     or (p.cmd.buttons & BT_CUSTOM1) and p.eggc1helper == false and p.eggflyboost then
-        --p.rings = $ - p.eggboostcost
         P_InstaThrust(p.mo, p.mo.angle, 150*FRACUNIT)
 		if p.boostnuker == true then
 			P_NukeEnemies(p.mo, p.mo, 300*FRACUNIT)
-			P_FlashPal(p, PAL_WHITE, 10)
+            if p.hyperflash then
+                P_FlashPal(p, PAL_WHITE, 10)
+            end
 			S_StartSound(p.mo, sfx_spdash)
 			if (p == displayplayer) then
 				P_StartQuake(50*FRACUNIT, 15)
