@@ -1,10 +1,10 @@
-assert(rawget(_G, 'PureHyper') ~= nil, 'PureHyper is already loaded, aborting...!')
+assert(rawget(_G, 'PureHyper') == nil, '[PureHyper] Previous instance found, aborting...!')
 rawset(_G, 'PureHyper', {})
 PureHyper.hooklib = {}
 
 
-PureHyper.functions = {}
-local FUNCS = PureHyper.functions
+local FUNCS = {}
+PureHyper.functions = FUNCS
 FUNCS.playerValid = function(p)
     return p and p.valid == true and p.mo and p.mo.valid == true
 end
@@ -28,10 +28,24 @@ FUNCS.mobjFlip = function(s)
     end
     return 1
 end
+---@return integer
+---@return table
+FUNCS.args = function(...)
+    return select('#', ...), {...}
+end
+FUNCS.sfreeslot = function(...)
+    local argc, argv = FUNCS.args(...)
+    for i = 1, argc do
+        local item = argv[i]
+        if rawget(_G, item) == nil then
+            freeslot(item)
+        end
+    end
+end
 
 
-PureHyper.tables = {}
-local TABLES = PureHyper.tables
+local TABLES = {}
+PureHyper.tables = TABLES
 
 local tbl_tmp = {
     S_PLAY_FALL, S_PLAY_SPRING, S_PLAY_ROLL, S_PLAY_JUMP, S_PLAY_ROLL
@@ -53,7 +67,7 @@ local base = 'LUA_Hyper'
 local scripts = {
     'Hooklib', 'IO', 'Freeslots', 'Flight', 'Switch', 'Core'
 }
-print('Initialization done, loading scripts...')
+print('[PureHyper] Initialization done, loading scripts...')
 for _, v in ipairs(scripts) do
 	dofile(base .. v)
 end

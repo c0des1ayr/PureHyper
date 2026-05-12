@@ -2,10 +2,11 @@
 --Bug Fixes, comments, and code cleanup courtesy of Dabir, Thanks for cleaning up my shoddy code lmfao
 local PH = PureHyper
 local FC = PH.tables.FlyingChars
-local states_flying = PH.tables.StatesFlying
+local SF = PH.tables.StatesFlying
 local HK = PH.hooklib
 local playerValid = PH.functions.playerValid
 local superCheck = PH.functions.superCheck
+local P_MobjFlip = PH.functions.mobjFlip
 HK.addHook('PlayerThink', function(p)
     -- Only FlyingChars can fly
     if not (playerValid(p) and FC[p.mo.skin] == true) then
@@ -65,7 +66,7 @@ HK.addHook('PlayerThink', function(p)
     p.mo.momz = $-P_GetMobjGravity(p.mo)
 
     -- You can't fall when you're flying
-    if states_flying[p.mo.state] == true then
+    if SF[p.mo.state] == true then
         p.mo.state = S_PLAY_FLOAT
     end
 
@@ -90,7 +91,7 @@ HK.addHook('PlayerThink', function(p)
     if (p.cmd.buttons & BT_JUMP) and not (p.cmd.buttons & BT_USE) and not p.eggflystart
     or (p.cmd.buttons & BT_JUMP) and not (p.cmd.buttons & BT_USE) then
         if not ((p.cmd.buttons & BT_CUSTOM1) and (p.eggc1helper == false)) then
-			P_SetObjectMomZ(p.mo, 1*FRACUNIT, true) -- Accelerate up
+			P_SetObjectMomZ(p.mo, 1*FRACUNIT*P_MobjFlip(p.mo), true) -- Accelerate up
 		end
     end
 
@@ -98,14 +99,14 @@ HK.addHook('PlayerThink', function(p)
     if (p.cmd.buttons & BT_USE) and not (p.cmd.buttons & BT_JUMP) then
 		if not ((p.cmd.buttons & BT_CUSTOM1) and (p.eggc1helper == false)) then
 			if p.eggflystart == false then
-				P_SetObjectMomZ(p.mo, -1*FRACUNIT, true)
+				P_SetObjectMomZ(p.mo, -1*FRACUNIT*P_MobjFlip(p.mo), true)
 			end
 		end
     end
 
 
     -- Cap the max flying speed at both ends
-    p.mo.momz = max(min(p.eggmaxvert, p.mo.momz), 0-p.eggmaxvert)
+    p.mo.momz = max(min(p.eggmaxvert, p.mo.momz), 0 - p.eggmaxvert)
 
     -- If you're holding both, and you're allowed to boost, and you can pay for it, boost
     if (p.cmd.buttons & BT_JUMP) and (p.cmd.buttons & BT_USE)
@@ -144,7 +145,7 @@ HK.addHook('PlayerThink', function(p)
     end
 end, "PlayerThink")
 
-addHook("JumpSpinSpecial", function(p)
+HK.addHook("JumpSpinSpecial", function(p)
     if (playerValid(p) and FC[p.mo.skin] == true)
     and superCheck(p) == 2 and not p.eggsuperflying and not (p.pflags & PF_USEDOWN) then
         p.eggsuperflying = true

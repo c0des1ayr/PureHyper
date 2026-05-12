@@ -8,6 +8,7 @@ tar -cvf - . | tar -xf - -C $TMPDIR
 popd
 pushd $TMPDIR
 zip -r $ADDONFILE .
-mv $ADDONFILE $WORKDIR
+rm -f $WORKDIR/../../addons/$ADDONFILE
+mv $ADDONFILE $WORKDIR/../../addons
 popd
 rm -rf $TMPDIR
