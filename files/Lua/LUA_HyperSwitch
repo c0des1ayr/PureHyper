@@ -1,8 +1,8 @@
 local PH = PureHyper
 local P_MobjFlip = PH.functions.mobjFlip
 local TB = PH.tables
-local CharAbilities = {}
-TB.CharAbilities = CharAbilities
+local CHA = {}
+TB.CharAbilities = CHA
 --//////////////////////////////////////////////
 --Unique hyper abilities for various characters!
 --//////////////////////////////////////////////
@@ -10,13 +10,13 @@ TB.CharAbilities = CharAbilities
 --This is because some behavior of hyper characters is normally hardcoded within their wad, and needs to be directly added in there.
 --metson hover is more of a flight lol
 if rphys ~= 62 then
-	CharAbilities.metalsonic = function(p)
+	CHA.metalsonic = function(p)
 		if p.secondjump and p.cmd.buttons&BT_JUMP then
 			P_SetObjectMomZ(p.mo, 8*FRACUNIT, false)
 		end
 	end
 end
-CharAbilities.knuckles = function(p)
+CHA.knuckles = function(p)
 	if p.mo.state == S_PLAY_GLIDE then
 		if p.mo.momz*P_MobjFlip(p.mo) < 0 then
 			P_SetObjectMomZ(p.mo, 0*FRACUNIT, false)
@@ -26,14 +26,14 @@ CharAbilities.knuckles = function(p)
 		end
 	end
 end
-CharAbilities.tails = function(p)
+CHA.tails = function(p)
 	if p.mo.state == S_PLAY_FLY
 	or p.mo.state == S_PLAY_SWIM then
 		p.powers[pw_tailsfly] = 15*TICRATE
 	end
 end
 --modern 'snoc doesn't have extra ring drain when flying
-CharAbilities.modernsonic = function(p)
+CHA.modernsonic = function(p)
 	if p.superboost == nil then
 		p.superboost = false
 		p.boosting = false
@@ -59,7 +59,7 @@ CharAbilities.modernsonic = function(p)
 	end
 end
 --eggman... rises faster? idk there's not a lot i can do with him
-CharAbilities.eggman = function(p)
+CHA.eggman = function(p)
 	if p.secondjump and p.cmd.buttons&BT_JUMP then
 		if p.mo.momz*P_MobjFlip(p.mo) < 90*FRACUNIT then
 			P_Thrust(p.mo, 90*FRACUNIT, true)
@@ -68,7 +68,7 @@ CharAbilities.eggman = function(p)
 end
 --ray is gay
 --translation: ray can go upwards indefinitely and gains significantly more momentum by gliding downwards
-CharAbilities.ray = function(p)
+CHA.ray = function(p)
 	if p.mo.state >= S_PLAY_GUP1
 	and p.mo.state <= S_PLAY_GUP5 then
 		if p.mo.momz <= 20*FRACUNIT then
@@ -95,12 +95,12 @@ CharAbilities.ray = function(p)
 	end
 end
 --nasya literally just gets mystic super by draykon's request
-CharAbilities.nasya = function(p)
+CHA.nasya = function(p)
 	p.mysticsuper = true
 	p.hyper.nasyamystichyper = true
 end
 --fang's bounce nukes (how original)
-CharAbilities.fang = function(p)
+CHA.fang = function(p)
 	if p.charability == CA_BOUNCE then
 		if p.mo.state == S_PLAY_BOUNCE_LANDING then
 			if p.hyper.bouncelatch then
@@ -116,25 +116,91 @@ CharAbilities.fang = function(p)
 	end
 end
 --some characters just get thok overwritten repeatedly lol
-CharAbilities.juniosonic = function(p)
+CHA.juniosonic = function(p)
 	if p.pflags & PF_THOKKED then
 		p.pflags = $ & ~PF_THOKKED
 		p.usable = true
 	end
 end
+--samus gets a crystal flash + instant speedbooster while moving + unlimited hyperbeam ammo
+CHA.samus = function(p)
+	local s = p.mo
+	p.mo.crystalflashtime = 2
+	p.hyper.samuscryflashhyper = true
+	if p.sam_hyperbeam and p.sam_hyperbeamammo < 99 then p.sam_hyperbeamammo = 99 end
+	local SAM = MetroidVanguard
+	if (p.cmd.buttons & BT_CUSTOM1) and not p.c1c2disable
+	or p.autospeedbooster then
+		if not p.samspbschargefull and (p.cmd.sidemove or p.cmd.forwardmove) and (
+			(p.speed > 24*s.scale)
+			and not ((s.eflags & MFE_UNDERWATER) and p.sam_gravitysuit ~= 2)
+			or (twodlevel or (s.flags2 & MF2_TWOD)) and (p.speed > 13*s.scale)
+			and not ((s.eflags & MFE_UNDERWATER) and p.sam_gravitysuit ~= 2)
+		) then
+			p.samspbscharge = 140
+			p.runspeed = 2199594
+
+			s.spbssfx = P_SpawnMobj(s.x, s.y, s.z, MT_SAMUSTHOK) --Don't make this a local value.
+			s.spbssfx.flags2 = MF2_DONTDRAW s.spbssfx.tics = 90
+			S_StartSound(s.spbssfx, sfx_sprnc)
+
+			S_StartSound(s, sfx_sprna)
+			s.sam_flashfade = 8
+			s.sam_flashfadecolor = SKINCOLOR_SAPPHIRE
+			p.charflags = $ & ~SF_NOSKID
+			p.runspeed = 2199594
+			s.sam_supertilt = 25
+			s.sam_afterboost = 7
+			s.SAM_StartBooster = 28
+			p.samspbschargefull = true
+			s.sam_spbsstart = 15
+			local ghs = P_SpawnMobj(s.x, s.y, s.z, MT_PBEXPANDI)
+			if ghs and ghs.valid then
+				ghs.color = SKINCOLOR_AZURE
+				ghs.scale = s.scale+(5<<16)
+				ghs.momx,ghs.momy,ghs.momz = s.momx*10/11,s.momy*10/11,s.momz*10/11
+				ghs.scalespeed = $*11
+				ghs.destscale = 45<<16
+			end
+
+			local ghs = P_SpawnMobjFromMobj(s,
+			FixedMul(120<<16, cos(s.angle)),
+			FixedMul(120<<16, sin(s.angle)),
+			-5*s.scale, MT_THOK)
+
+			ghs.sprite = SPR_MXP4
+			ghs.renderflags = RF_FULLBRIGHT|RF_NOCOLORMAPS
+			ghs.frame = V|FF_TRANS80
+			ghs.blendmode = AST_ADD
+			ghs.scale = s.scale/3
+			ghs.momx,ghs.momy = s.momx*2/3,s.momy*2/3
+			ghs.momz = s.momz+((-9<<16)*P_MobjFlip(ghs))
+			ghs.tics,ghs.fuse = 22,11
+			ghs.scalespeed = SAM.scaled(ghs, ghs.scalespeed*2)
+			ghs.destscale = 99<<16
+		end
+	end
+end
+CHA.basesamus = CHA.samus
 
 
-local AbilitiesReset = {}
-TB.AbilitiesReset = AbilitiesReset
+local AR = {}
+TB.AbilitiesReset = AR
 
 if not rphys == 62 then
-	AbilitiesReset.knuckles = function(p)
+	AR.knuckles = function(p)
 		p.charflags = $ & ~SF_MULTIABILITY
 	end
 end
-AbilitiesReset.nasya = function(p)
+AR.nasya = function(p)
 	if p.hyper.nasyamystichyper == true and p.mysticsuper then
 		p.mysticsuper = false
 		p.hyper.nasyamystichyper = false
 	end
 end
+AR.samus = function(p)
+	if p.hyper.samuscryflashhyper then
+		p.hyper.samuscryflashhyper = false
+	end
+end
+AR.basesamus = AR.samus
