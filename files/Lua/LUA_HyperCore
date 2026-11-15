@@ -174,6 +174,7 @@ HK.addHook("PlayerThink", function(p)
 				hyperparticle.fuse = 10
 				hyperparticle.scale = p.mo.scale *2/3
 				hyperparticle.source = p.mo
+				hyperparticle.dontdrawforviewmobj = p.mo
 			else
 				local hyperparticle = P_SpawnMobjFromMobj(p.mo, P_RandomRange(-10, 10) * FRACUNIT, P_RandomRange(-10, 10) * FRACUNIT, 20*FRACUNIT, MT_SUPERSPARK)
 				hyperparticle.momx = P_RandomRange(-9, 9) * FRACUNIT
@@ -188,11 +189,13 @@ HK.addHook("PlayerThink", function(p)
 				hyperparticle.fuse = 10
 				hyperparticle.scale = p.mo.scale *2/3
 				hyperparticle.source = p.mo
+				hyperparticle.dontdrawforviewmobj = p.mo
 
 				local metalspark = P_SpawnMobjFromMobj(p.mo, 0, 0, 20*FRACUNIT, MT_WATERZAP)
 				metalspark.momx = P_RandomRange(-9, 9) * FRACUNIT
 				metalspark.momy = P_RandomRange(-9, 9) * FRACUNIT
 				metalspark.momz =  P_RandomRange(-9, 9) * FRACUNIT
+				metalspark.dontdrawforviewmobj = p.mo
 				if (leveltime % 7 == 0) and p.speed < p.runspeed then
 					local metalaura = P_SpawnMobjFromMobj(p.mo, 0, 0, 0, MT_METSONAURA)
 					metalaura.fuse = 8

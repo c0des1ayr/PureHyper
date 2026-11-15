@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# this damn engine needs zips with no sparse files, so I can't use bsdtar
-ADDONFILE="VL_PureHyper_v0.1.0.pk3"
+# this damn engine needs zips with no sparse files ("holes" in DOOM-speak), so I can't use bsdtar
+NAME="VL_PureHyper"
+VERSION="$(git describe --tags)"
+ADDONFILE="$NAME-$VERSION.pk3"
 TMPDIR=$(mktemp -d)
 WORKDIR=$PWD
 pushd files
@@ -8,7 +10,6 @@ tar -cvf - . | tar -xf - -C $TMPDIR
 popd
 pushd $TMPDIR
 zip -r $ADDONFILE .
-rm -f $WORKDIR/../../addons/$ADDONFILE
-mv $ADDONFILE $WORKDIR/../../addons
+mv $ADDONFILE $WORKDIR
 popd
 rm -rf $TMPDIR
