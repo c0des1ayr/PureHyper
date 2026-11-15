@@ -1,0 +1,140 @@
+local PH = PureHyper
+local P_MobjFlip = PH.functions.mobjFlip
+local TB = PH.tables
+local CharAbilities = {}
+TB.CharAbilities = CharAbilities
+--//////////////////////////////////////////////
+--Unique hyper abilities for various characters!
+--//////////////////////////////////////////////
+--Note: Some characters with hyper abilities have it inside of their code instead of here.
+--This is because some behavior of hyper characters is normally hardcoded within their wad, and needs to be directly added in there.
+--metson hover is more of a flight lol
+if rphys ~= 62 then
+	CharAbilities.metalsonic = function(p)
+		if p.secondjump and p.cmd.buttons&BT_JUMP then
+			P_SetObjectMomZ(p.mo, 8*FRACUNIT, false)
+		end
+	end
+end
+CharAbilities.knuckles = function(p)
+	if p.mo.state == S_PLAY_GLIDE then
+		if p.mo.momz*P_MobjFlip(p.mo) < 0 then
+			P_SetObjectMomZ(p.mo, 0*FRACUNIT, false)
+			if rphys ~= 62 then
+				p.charflags = $|SF_MULTIABILITY
+			end
+		end
+	end
+end
+CharAbilities.tails = function(p)
+	if p.mo.state == S_PLAY_FLY
+	or p.mo.state == S_PLAY_SWIM then
+		p.powers[pw_tailsfly] = 15*TICRATE
+	end
+end
+--modern 'snoc doesn't have extra ring drain when flying
+CharAbilities.modernsonic = function(p)
+	if p.superboost == nil then
+		p.superboost = false
+		p.boosting = false
+	end
+	if p.superboost == true then
+		if (leveltime % 5 == 0) then
+			p.rings = $+1
+		end
+	end
+	--also nukes because why the fuck not lol
+	if (p.boosting == true or p.superboost == true) then
+		if p.hyper.modernnuker == true then
+			local thok = P_SpawnMobjFromMobj(p.mo, 0, 0, 0, MT_THOK)
+			P_NukeEnemies(thok, p.mo, 600*FRACUNIT)
+			P_RemoveMobj(thok)
+			if p.hyperflash and p.hyperflash == 1 then
+				P_FlashPal(p, PAL_WHITE, 8)
+			end
+			p.hyper.modernnuker = false
+		end
+	else
+		p.hyper.modernnuker = true
+	end
+end
+--eggman... rises faster? idk there's not a lot i can do with him
+CharAbilities.eggman = function(p)
+	if p.secondjump and p.cmd.buttons&BT_JUMP then
+		if p.mo.momz*P_MobjFlip(p.mo) < 90*FRACUNIT then
+			P_Thrust(p.mo, 90*FRACUNIT, true)
+		end
+	end
+end
+--ray is gay
+--translation: ray can go upwards indefinitely and gains significantly more momentum by gliding downwards
+CharAbilities.ray = function(p)
+	if p.mo.state >= S_PLAY_GUP1
+	and p.mo.state <= S_PLAY_GUP5 then
+		if p.mo.momz <= 20*FRACUNIT then
+			P_SetObjectMomZ(p.mo, 20*FRACUNIT, false)
+		end
+	end
+
+	if p.mo.state >= S_PLAY_GUP1
+	and p.mo.state <= S_PLAY_GUP5
+	or p.mo.state >= S_PLAY_GUP1R --angling from up to flat
+	and p.mo.state <= S_PLAY_GUP4R --flat from up
+	or p.mo.state >= S_PLAY_GDWN1 --angling from flat to down
+	and p.mo.state <= S_PLAY_GDWN5
+	or p.mo.state >= S_PLAY_GDWN1R --angling from down to flat
+	and p.mo.state <= S_PLAY_GDWN4R then
+		if p.speed <= 50*FRACUNIT then
+			P_InstaThrust(p.mo, p.mo.angle, 50*FRACUNIT)
+		end
+		if p.mo.momz*P_MobjFlip(p.mo) <= 0 then
+			if p.speed <= 70*FRACUNIT then
+				P_InstaThrust(p.mo, p.mo.angle, 70*FRACUNIT)
+			end
+		end
+	end
+end
+--nasya literally just gets mystic super by draykon's request
+CharAbilities.nasya = function(p)
+	p.mysticsuper = true
+	p.hyper.nasyamystichyper = true
+end
+--fang's bounce nukes (how original)
+CharAbilities.fang = function(p)
+	if p.charability == CA_BOUNCE then
+		if p.mo.state == S_PLAY_BOUNCE_LANDING then
+			if p.hyper.bouncelatch then
+				P_NukeEnemies(p.mo, p.mo, 1100*FRACUNIT)
+				if (p == displayplayer) then
+					P_StartQuake(50*FRACUNIT, 10)
+				end
+				p.hyper.bouncelatch = false
+			end
+		else
+			p.hyper.bouncelatch = true
+		end
+	end
+end
+--some characters just get thok overwritten repeatedly lol
+CharAbilities.juniosonic = function(p)
+	if p.pflags & PF_THOKKED then
+		p.pflags = $ & ~PF_THOKKED
+		p.usable = true
+	end
+end
+
+
+local AbilitiesReset = {}
+TB.AbilitiesReset = AbilitiesReset
+
+if not rphys == 62 then
+AbilitiesReset.knuckles = function(p)
+	p.charflags = $ & ~SF_MULTIABILITY
+end
+end
+AbilitiesReset.nasya = function(p)
+	if p.hyper.nasyamystichyper == true and p.mysticsuper then
+		p.mysticsuper = false
+		p.hyper.nasyamystichyper = false
+	end
+end

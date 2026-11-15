@@ -1,0 +1,22 @@
+local CV = PureHyper.cvars
+
+CV.hyperringreq = CV_RegisterVar({
+    name = "purehyper.ringsrequired",
+    defaultvalue = 150,
+    flags = CV_NETVAR|CV_SHOWMODIF,
+    PossibleValue = {MIN = 50, MAX = 9999}
+})
+
+CV.hyperenabled = CV_RegisterVar({
+    name = "purehyper.enabled",
+    defaultvalue = "On",
+    flags = CV_NETVAR|CV_SHOWMODIF,
+    PossibleValue = CV_OnOff
+})
+
+CV.hyperdebug = CV_RegisterVar({
+    name = "purehyper.debug",
+    defaultvalue = "Off",
+    flags = CV_NETVAR|CV_SHOWMODIF,
+    PossibleValue = CV_OnOff
+})

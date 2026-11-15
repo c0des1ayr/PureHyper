@@ -1,0 +1,282 @@
+local PH = PureHyper
+local CV = PH.cvars
+local HK = PH.hooklib
+local TB = PH.tables
+
+local FN = PH.functions
+local CA = TB.CharAbilities
+local AR = TB.AbilitiesReset
+local valid = FN.valid
+local playerValid = FN.playerValid
+local superCheck = FN.superCheck
+local skin = FN.skin
+local PlayHyperTrack = FN.PlayHyperTrack
+local PlayMetalTrack = FN.PlayMetalTrack
+local hyperallowed = CV.hyperenabled
+local ringsrequired = CV.hyperringreq
+
+local function call(func, ...)
+	if CV.hyperdebug.value then
+		func(...)
+	else
+		pcall(func, ...)
+	end
+end
+
+HK.addHook("PlayerThink", function(p)
+	if not p.valid then return end
+	if p.hyper == nil then
+		local hyper = {
+			isunlocked = true,
+			capable = false,
+			dashhelper = true,
+			modernnuker = false,
+			nasyamystichyper = false
+		}
+		if p.mo then
+			p.hyper = hyper
+		else
+			p.hyper = nil
+		end
+	end
+	if not hyperallowed.value then
+		if p.hyper.capable then
+			p.hyper.capable = false
+			if p.powers[pw_super] then
+				P_RestoreMusic(p)
+				P_PlayJingle(p, JT_SUPER)
+			end
+		end
+		return
+	end
+	if p.hassupermusic == nil then
+		p.hassupermusic = false end
+	if (p.mo.state >= S_PLAY_HYPERTRNS_1
+	and p.mo.state <= S_PLAY_HYPERTRNS_6) then
+		p.hypertransforming = true
+		p.pflags = $|PF_FULLSTASIS
+	else
+		p.hypertransforming = false
+	end
+	--if you hypa and yo fren a bot they get spedshul effects without actually going super
+	do
+		local sp = players[0]
+		if p.bot and playerValid(sp) and superCheck(sp) == 2 then
+			p.rings = sp.rings
+			if (sp.mo.state >= S_PLAY_HYPERTRNS_1
+			and sp.mo.state <= S_PLAY_HYPERTRNS_6) then
+				if not p.powers[pw_super] then
+					P_DoSuperTransformation(p, false) end
+			end
+			if not p.powers[pw_super] then
+				p.powers[pw_super] = 1 end
+		end
+	end
+	--alt has his own hyper stuff so he doesn't get any of this stuff
+	if skin(p) == "altsonic" then
+		return end
+	--if you're capable of going hyper
+	if (p.charflags & SF_SUPER) and p.hyper.isunlocked then
+		if not p.powers[pw_super] then
+			--You need to collect 150 rings while in your normal form before transforming to go hyper.
+			if p.rings >= ringsrequired.value then
+				p.hyper.capable = true
+			else --If you haven't collected enough rings, fuck off, you're not going hyper.
+				p.hyper.capable = false
+			end
+		end
+		--If you're super, and eligible for hyper bonuses...
+		if superCheck(p) == 2 then
+			--Rock that funky music, dawg!
+			if not (p.powers[pw_extralife]) and not (skin(p) == "modernsonic" or skin(p) == "msonic" or skin(p) == "flarethelizard" or skin(p) == "xtreme" or skin(p) == "rabbid" or skin(p) == "flysonic" or p.hassupermusic == true or p.autoexitmusic)
+			and not p.bot then
+				if skin(p) == "metalsonic" then --Metal gets a little something extra...
+					PlayMetalTrack(p)
+				else
+					if not p.rafxtra and not p.rafxtrb and not p.milnekick then
+						PlayHyperTrack(p) end
+				end
+			end
+			if p.mo.state == S_PLAY_SUPER_TRANS1 then
+				p.mo.state = S_PLAY_HYPERTRNS_1
+				if not (S_SoundPlaying(p.mo, sfx_htrns)) then
+					S_StartSound(p.mo, sfx_htrns) end
+			end
+			if (p.mo.state >= S_PLAY_HYPERTRNS_1
+			and p.mo.state <= S_PLAY_HYPERTRNS_6) then
+				p.rings = $+1
+				p.mo.momx, p.mo.momy, p.mo.momz = 0, 0, 0 end
+			if (p.mo.state >= S_PLAY_HYPERTRNS_4
+			and p.mo.state <= S_PLAY_HYPERTRNS_6) then
+				if (p == displayplayer) then
+					P_StartQuake(25*FRACUNIT, 2) end
+				if (leveltime % 2 == 0) then
+					P_NukeEnemies(p.mo, p.mo, 1536*FRACUNIT) end
+			end
+			if p.mo.state == S_PLAY_HYPERTRNS_4 then
+				if p.hyperflash then
+					P_FlashPal(p, PAL_WHITE, 8) end
+			end
+			--Adjust stats for hyper forms
+			p.jumpfactor = skins[p.skin].jumpfactor*3/2
+			if skin(p) ~= "srbii" then
+				p.actionspd = skins[p.skin].actionspd*2 end
+			if p.charability2 == CA2_SPINDASH then
+				p.mindash = 90*FRACUNIT
+				p.maxdash = 170*FRACUNIT
+			end
+			--Hyper forms don't need to breathe.
+			if (p.mo.eflags & MFE_UNDERWATER) then
+				p.powers[pw_underwater] = 100*TICRATE end
+			if P_InSpaceSector(p.mo) then
+				p.powers[pw_spacetime] = 100*TICRATE end
+			--Special Interaction with dashmode characters. Entering dashmode causes an explosion.
+			if (p.charflags & SF_DASHMODE) and skin(p) ~= "altsonic" then
+				if p.dashmode > 3*TICRATE and p.hyper.dashhelper == true then
+					P_NukeEnemies(p.mo, p.mo, 1536*FRACUNIT)
+					if p.hyperflash then
+						P_FlashPal(p, PAL_WHITE, 8) end
+					if (p == displayplayer) then
+						P_StartQuake(50*FRACUNIT, 10) end
+					p.hyper.dashhelper = false
+				end
+				if (p.dashmode <= DASHMODE_THRESHOLD - 3) then
+					p.hyper.dashhelper = true end
+			end
+			--Hmm... Something's missing here.
+			--Well, not really. I just think that having a bunch of if-statements is stupid, so I replaced it with table indexing.
+			--In theory, it should work in O(1) time due to hashing (or something like that, idk, I don't have a CompSci degree)
+			if CA[skin(p)] ~= nil then
+				call(CA[skin(p)], p) end
+			--Visuals
+			--afterimages
+			if (p.speed > FRACUNIT or p.mo.momz > FRACUNIT or p.mo.momz < -1*FRACUNIT) and skin(p) ~= "metalsonic"
+			or (p.speed >= p.runspeed or p.mo.momz > FRACUNIT and p.speed >= p.runspeed or p.mo.momz < -1*FRACUNIT and p.speed >= p.runspeed) and skin(p) == "metalsonic" then
+				local AfterImageSpawn = P_SpawnGhostMobj(p.mo)
+				if skin(p) ~= "metalsonic" then
+					AfterImageSpawn.color = p.mo.color
+				else
+					AfterImageSpawn.color = SKINCOLOR_METALSONICAURA
+				end
+				AfterImageSpawn.colorized = true
+				AfterImageSpawn.rollangle = p.mo.rollangle
+			end
+			if skin(p) ~= "metalsonic" then
+				local hyperparticle = P_SpawnMobjFromMobj(p.mo, P_RandomRange(-10, 10) * FRACUNIT, P_RandomRange(-10, 10) * FRACUNIT, 20*FRACUNIT, MT_SUPERSPARK)
+				hyperparticle.momx = P_RandomRange(-9, 9) * FRACUNIT
+				hyperparticle.momy = P_RandomRange(-9, 9) * FRACUNIT
+				hyperparticle.momz =  P_RandomRange(-9, 9) * FRACUNIT
+				hyperparticle.colorized = true
+				hyperparticle.color = (SKINCOLOR_SUPER_HYPERMET_1 + abs( ( (p.powers[pw_super] >> 1) % 9) - 4))
+				hyperparticle.fuse = 10
+				hyperparticle.scale = p.mo.scale *2/3
+				hyperparticle.source = p.mo
+			else
+				local hyperparticle = P_SpawnMobjFromMobj(p.mo, P_RandomRange(-10, 10) * FRACUNIT, P_RandomRange(-10, 10) * FRACUNIT, 20*FRACUNIT, MT_SUPERSPARK)
+				hyperparticle.momx = P_RandomRange(-9, 9) * FRACUNIT
+				hyperparticle.momy = P_RandomRange(-9, 9) * FRACUNIT
+				hyperparticle.momz =  P_RandomRange(-9, 9) * FRACUNIT
+				hyperparticle.colorized = true
+				if P_RandomRange(1, 2) == 1 then
+					hyperparticle.color = SKINCOLOR_YELLOW
+				else
+					hyperparticle.color = SKINCOLOR_CYAN
+				end
+				hyperparticle.fuse = 10
+				hyperparticle.scale = p.mo.scale *2/3
+				hyperparticle.source = p.mo
+
+				local metalspark = P_SpawnMobjFromMobj(p.mo, 0, 0, 20*FRACUNIT, MT_WATERZAP)
+				metalspark.momx = P_RandomRange(-9, 9) * FRACUNIT
+				metalspark.momy = P_RandomRange(-9, 9) * FRACUNIT
+				metalspark.momz =  P_RandomRange(-9, 9) * FRACUNIT
+				if (leveltime % 7 == 0) and p.speed < p.runspeed then
+					local metalaura = P_SpawnMobjFromMobj(p.mo, 0, 0, 0, MT_METSONAURA)
+					metalaura.fuse = 8
+					metalaura.color = SKINCOLOR_METALSONICAURA
+					metalaura.source = p.mo
+					metalaura.scale = p.mo.scale
+				end
+			end
+		else
+			--reset stats if you ain't hypa
+			if p.dashmode <= DASHMODE_THRESHOLD then
+				p.jumpfactor = skins[p.skin].jumpfactor end
+			if skin(p) ~= "srbii" then
+				p.actionspd = skins[p.skin].actionspd end
+			if p.charability2 == CA2_SPINDASH then
+				p.mindash = skins[p.skin].mindash
+				p.maxdash = skins[p.skin].maxdash
+			end
+			if AR[skin(p)] ~= nil then
+				call(AR[skin(p)], p) end
+		end
+		--helper for the flying hyper sonic script
+		if p.eggc1helper == nil then
+			p.eggc1helper = false end
+		if p.cmd.buttons & BT_CUSTOM1 and p.eggsuperflying == false then
+			p.eggc1helper = true end
+		if not (p.cmd.buttons & BT_CUSTOM1) then
+			p.eggc1helper = false end
+		--dabir used so many returns that i also need this here
+		if p.eggsuperflying == false then
+			if (S_SoundPlaying(p.mo, sfx_hypbos)) then
+				S_StopSoundByID(p.mo, sfx_hypbos) end
+		end
+	end
+end)
+
+HK.addHook("PostThinkFrame", function()
+	for p in players.iterate() do
+		if not playerValid(p) then
+			return end
+		if superCheck(p) ~= 2 then
+			return end
+		--Set the correct skincolor for Hyper stuff.
+		--Yet again, metal gets unique stuff. Hope he doesn't get an ego...
+		if skin(p) == "metalsonic" then
+			if p.dashmode <= DASHMODE_THRESHOLD then
+				if p.mo.state < S_PLAY_HYPERTRNS_1 and p.mo.state > S_PLAY_HYPERTRNS_3 then
+					p.mo.color = (SKINCOLOR_SUPER_HYPERMET_1 + abs( ( (p.powers[pw_super] >> 1) % 9) - 4))
+				else
+					p.mo.color = p.skincolor
+				end
+			end
+		else
+			if p.mo.state < S_PLAY_HYPERTRNS_1 and p.mo.state > S_PLAY_HYPERTRNS_3 then
+				p.mo.color = (SKINCOLOR_SUPER_HYPER_1 + abs( ( (p.powers[pw_super] >> 1) % 9) - 4))
+			else
+				p.mo.color = p.skincolor
+			end
+		end
+	end
+end)
+
+HK.addHook("MobjThinker", function(mo)
+	if not valid(mo) then return end
+    if not mo.source then return end
+    mo.lifetime = $ or 0
+	P_SetOrigin(mo, mo.source.x + mo.lifetime * mo.momx, mo.source.y + mo.lifetime * mo.momy, mo.source.z + 17*FRACUNIT + mo.lifetime * mo.momz)
+    mo.lifetime = $ + 1
+end, MT_SUPERSPARK)
+HK.addHook("MobjThinker", function(mo)
+	if not valid(mo) then return end
+    if not mo.source then return end
+    mo.lifetime = $ or 0
+	mo.color = (SKINCOLOR_METALSONICAURA_1 + abs( ( (mo.source.player.powers[pw_super] >> 1) % 8) - 4))
+	P_SetOrigin(mo, mo.source.x, mo.source.y, mo.source.z)
+    mo.lifetime = $+1
+end, MT_METSONAURA)
+
+local function MobjKiller(target, _, source)
+    if source
+    and source.player
+    and (target.flags & MF_ENEMY) then
+		if source.skin == "knuckles" then
+			if source.state == S_PLAY_GLIDE and superCheck(source.player) == 2 then
+				P_SetObjectMomZ(source, 18*FRACUNIT, true) end
+		end
+    end
+end
+
+--HK.addHook("MobjDeath", MobjKiller)

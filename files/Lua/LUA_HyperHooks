@@ -1,0 +1,109 @@
+--[[
+Easy hook system
+--]]
+
+local HK = PureHyper.hooklib
+
+HK.hooks = {}
+
+---@param hookType string The hook type
+--- runs all of the hooks associated with @hookType
+function HK.RunHook(key, hookType, ...)
+	local returnValue
+	for _, func in ipairs(HK.hooks[key][hookType]) do
+		local ret = func(...)
+		if ret ~= nil then
+			returnValue = ret
+		end
+	end
+	return returnValue
+end
+
+---@param hookType string The hook type
+---@param func function The function to hook
+--- hooks @func so that it is called when @hookType is run
+function HK.addHook(hookType, func, extraArg)
+	local key = extraArg or MT_NULL
+	local hooks = HK.hooks[key]
+
+	--- if necessary, create hook table for this string/object type
+	if not hooks then
+		hooks = {}
+		HK.hooks[key] = hooks
+	end
+
+	--- if necessary, create a new table in the hook table for this hook type, and hook it
+	if not hooks[hookType] then
+		hooks[hookType] = {}
+		if not HK.customHookTypes[hookType] then
+			addHook(hookType, function(...)
+				return HK.RunHook(key, hookType, ...)
+			end, extraArg)
+		end
+	end
+
+	--- add this function to the hook's list
+	table.insert(hooks[hookType], func)
+end
+
+---@param hookType string The hook type
+---@param func function The function to hook
+--- hooks @func to multiple objects/strings so that they are called when @hookType is run
+function HK.multiHook(hookType, func, mts)
+	for _,mt in ipairs(mts) do
+        if mt ~= nil
+        then
+            HK.AddHook(hookType, func, mt)
+        end
+	end
+end
+
+---@param hookType string The hook type
+---@param func function The function to unhook
+--- removes a specific hooked function or the entire hook type
+function HK.remHook(hookType, func, extraArg)
+	local key = extraArg or MT_NULL
+	local hooks = HK.hooks[key]
+	if not (hooks and hooks[hookType]) then
+		return
+	end
+
+	-- remove a specific function if requested
+	if func then
+		for i, f in ipairs(hooks[hookType]) do
+			if f == func then
+				table.remove(hooks[hookType], i)
+				break
+			end
+		end
+	end
+
+	-- if list becomes empty or func was nil, remove the entire hookType
+	if (not func) or (#hooks[hookType] == 0) then
+		hooks[hookType] = nil
+	end
+
+	-- remove empty key tables
+	if next(hooks) == nil then
+		HK.hooks[key] = nil
+	end
+end
+
+HK.customHookTypes = {}
+---@param hookType string The hook type
+--- registers a nonvanilla hook type
+function HK.RegisterCustomHook(hookType)
+	HK.customHookTypes[hookType] = true
+end
+
+--- attempts to run a hook; if nothing is hooked to @hookType with @key, nothing runs
+---
+--- intended for running hooked functions outside of hooks, such as with custom hooks
+function HK.TryRunHook(key, hookType, ...)
+	local hooks = HK.hooks[key]
+	if not (hooks and hooks[hookType]) then
+		return
+	end
+
+	return HK.RunHook(key, hookType, ...)
+end

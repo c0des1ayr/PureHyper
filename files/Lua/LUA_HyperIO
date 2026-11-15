@@ -1,0 +1,142 @@
+local initialized
+
+local FLASH = "client/PureHyper/hyperflash.dat"
+local MUSIC = "client/PureHyper/hypermusic.dat"
+
+local HK = PureHyper.hooklib
+local FN = PureHyper.functions
+local CPrint = FN.CPrint
+local valid = FN.valid
+
+HK.addHook("ThinkFrame", function()
+	if valid(consoleplayer)
+	and not initialized
+	and consoleplayer.hyperflash == nil then
+		initialized = true
+		local file = io.openlocal(FLASH)
+		if file then
+			local num = file:read("*n")
+			if num == 1 then
+				COM_BufInsertText(consoleplayer, "hyper_flash on")
+			else
+				COM_BufInsertText(consoleplayer, "hyper_flash off")
+			end
+			file:close()
+		else
+			COM_BufInsertText(consoleplayer, "hyper_flash on")
+		end
+		local file2 = io.openlocal(MUSIC)
+		if file2 then
+			local num = file2:read("*n")
+			if num == 1 then
+				COM_BufInsertText(consoleplayer, "hyper_music hypermania")
+			elseif num == 2 then
+				COM_BufInsertText(consoleplayer, "hyper_music xmom")
+			else
+				COM_BufInsertText(consoleplayer, "hyper_music off")
+			end
+			file2:close()
+		else
+			COM_BufInsertText(consoleplayer, "hyper_music hypermania")
+		end
+	end
+end)
+
+local function HYFlash(p, a)
+	if valid(p) then
+		if a then
+			if a == "on" or a == "1" or a == "true" or a == "yes" then
+				p.hyperflash = 1
+				CPrint("Screen flashing enabled.")
+				if io and p == consoleplayer then
+					local file = io.openlocal(FLASH, "w+")
+					file:write(p.hyperflash)
+					file:close()
+				end
+			elseif a == "off" or a == "false" or a == "0" or a == "no" then
+				p.hyperflash = 0
+				CPrint("Screen flashing disabled.")
+				if io and p == consoleplayer then
+					local file = io.openlocal(FLASH, "w+")
+					file:write(p.hyperflash)
+					file:close()
+				end
+			end
+		else
+			CPrint("Toggles screen flashing.")
+		end
+	else
+		CPrint("You aren't in a stage, fuckwit.")
+	end
+end
+
+COM_AddCommand("hyper_flash", HYFlash)
+
+local function HYMusic(p, a)
+	if valid(p) then
+		if a then
+			if a == "off" or a == "false" or a == "0" or a == "no" then
+				p.hypertrack =  0
+				CPrint("Music disabled.")
+				if io and p == consoleplayer then
+					local file = io.openlocal(MUSIC, "w+")
+					file:write(p.hypertrack)
+					file:close()
+				end
+			elseif a == "on" or a == "1" or a == "true" or a == "yes" or a == "hm" or a == "hypermania" then
+				p.hypertrack =  1
+				CPrint("Switched to HyperMania's track.")
+				if io and p == consoleplayer then
+					local file = io.openlocal(MUSIC, "w+")
+					file:write(p.hypertrack)
+					file:close()
+				end
+			elseif a == "xmom" or a == "2" or a == "old" then
+				p.hypertrack =  2
+				CPrint("Switched to XMom's track.")
+				if io and p == consoleplayer then
+					local file = io.openlocal(MUSIC, "w+")
+					file:write(p.hypertrack)
+					file:close()
+				end
+			end
+		else
+			CPrint("Switches between HyperMania's and XMom's hyper tracks. Can also turn off hyper music entirely.")
+		end
+	else
+		CPrint("You aren't in a stage, fuckwit.")
+	end
+end
+
+COM_AddCommand("hyper_music", HYMusic)
+
+local function is_in(t, d)
+    local exists = false
+    for _, v in ipairs(t) do
+        if v == d then
+            exists = true
+            break
+        end
+    end
+    return exists
+end
+
+local tracks = {'OHYPER', '_HYPER'}
+FN.PlayHyperTrack = function(p)
+	if not p.hypertrack then
+		if is_in(tracks, S_MusicName(p):upper()) then
+			P_RestoreMusic(p)
+		end
+		return
+	end
+	S_ChangeMusic(p.hypertrack == 2 and "OHYPER" or "_HYPER", true, p)
+end
+FN.PlayMetalTrack = function(p)
+	if not p.hypertrack then
+		if S_MusicName(p):upper() == "_GSSZB" then
+			P_RestoreMusic(p)
+		end
+		return
+	end
+	S_ChangeMusic("_GSSZB", true, p)
+end
