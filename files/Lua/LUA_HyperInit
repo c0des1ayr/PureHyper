@@ -1,62 +1,77 @@
-assert(rawget(_G, 'PureHyper') == nil, '[PureHyper] Previous instance found, aborting...!')
-rawset(_G, 'PureHyper', {})
-PureHyper.hooklib = {}
+assert(rawget(_G, "PureHyper") == nil, "\x82[PureHyper]\x80 Previous instance found, aborting...!")
+rawset(_G, "PureHyper", {})
+local HK = {}
+PureHyper.hooklib = HK
 
 
-local FUNCS = {}
-PureHyper.functions = FUNCS
+local FN = {}
+PureHyper.functions = FN
 ---@param str string
-FUNCS.HYPrint = function(str)
-    print('\x82[PureHyper]\x80 ' .. str)
+FN.APrint = function(str)
+    print("\x82[PureHyper]\x80 " .. str)
 end
 ---@param str string
-FUNCS.HYPrintf = function(str)
+FN.CPrint = function(str)
     local p = consoleplayer
-    if p
-    then CONS_Printf(p, '\x82[PureHyper]\x80 ' .. str)
-    end
+    if p then
+        CONS_Printf(p, "\x82[PureHyper]\x80 " .. str) end
 end
-FUNCS.playerValid = function(p)
-    return p and p.valid == true and p.mo and p.mo.valid == true
+FN.valid = function(m)
+	return m and m.valid
 end
-FUNCS.superCheck = function(p)
+FN.playerValid = function(p)
+    return FN.valid(p) and FN.valid(p.mo)
+end
+FN.superCheck = function(p)
     if p.powers[pw_super] then
         if p.hyper and p.hyper.capable then
-            return 2
-        end
+            return 2 end
         return 1
     end
     return 0
 end
-FUNCS.validAndHyper = function(p)
-    if FUNCS.playerValid(p) == true and FUNCS.superCheck(p) == 2 then return true end
-    return false
+FN.skin = function(p)
+    return skins[p.skin].name
 end
-FUNCS.mobjFlip = function(s)
+FN.mobjFlip = function(s)
     if s and s.valid
     and ((s.eflags&MFE_VERTICALFLIP) or (s.flags2&MF2_OBJECTFLIP)) then
-        return -1
-    end
+        return -1 end
     return 1
+end
+---@param st1 string
+---@param st2 string
+---@return boolean
+FN.strcmp = function(st1, st2)
+	return st1:upper() == st2:upper()
+end
+---Safer replacement for rawget
+---@param tbl table
+---@param idx any
+---@return any
+FN.srawget = function(tbl, idx)
+    local res = {pcall(rawget, tbl, idx)}
+    if res[1] == false then
+        return nil end
+    return res[2]
 end
 ---@return integer
 ---@return table
-FUNCS.args = function(...)
-    return select('#', ...), {...}
+FN.args = function(...)
+    return select("#", ...), {...}
 end
-FUNCS.sfreeslot = function(...)
-    local argc, argv = FUNCS.args(...)
+FN.sfreeslot = function(...)
+    local argc, argv = FN.args(...)
     for i = 1, argc do
         local item = argv[i]
-        if rawget(_G, item) == nil then
-            freeslot(item)
-        end
+        if FN.srawget(_G, item) == nil then
+            freeslot(item) end
     end
 end
 
 
-local TABLES = {}
-PureHyper.tables = TABLES
+local TB = {}
+PureHyper.tables = TB
 
 local tbl_tmp = {
     S_PLAY_FALL, S_PLAY_SPRING, S_PLAY_ROLL, S_PLAY_JUMP, S_PLAY_ROLL
@@ -65,20 +80,52 @@ local tmp_tbl = {}
 for _,v in ipairs(tbl_tmp) do
     tmp_tbl[v] = true
 end
-TABLES.StatesFlying = tmp_tbl
+TB.StatesFlying = tmp_tbl
 tbl_tmp, tmp_tbl = nil, nil
 
-TABLES.FlyingChars = {
+TB.FlyingChars = {
     sonic = true,
     rafael = true
 }
 
-
-local base = 'LUA_Hyper'
-local scripts = {
-    'Hooklib', 'IO', 'Freeslots', 'Flight', 'Switch', 'Core'
+TB.OnlyChecking = {
+    xsonic = true,
+    adventuresonic = true
 }
-FUNCS.HYPrint('Initialization done, loading scripts...')
+
+TB.NoMusic = {
+    modernsonic = true,
+    msonic = true,
+    flarethelizard = true,
+    xtreme = true,
+    rabbid = true,
+    flysonic = true
+}
+
+
+local CV = {}
+PureHyper.cvars = CV
+
+
+local base = "LUA_Hyper"
+local scripts = {
+    "Hooks", "IO", "Freeslots", "CVars", "Flight", "Switch", "Core"
+}
+FN.APrint("Initialization done, loading scripts...")
+
+local at = {HK, FN, TB, CV}
+
 for _, v in ipairs(scripts) do
-	dofile(base .. v)
+    local ret = {pcall(dofile, base .. v)}
+	if ret[1] == false then
+		FN.APrint("Something went wrong! Hosing PureHyper...")
+        for _,t in ipairs(at) do
+            for i,_ in pairs(t) do
+                t[i] = nil
+            end
+        end
+		rawset(_G, "PureHyper", nil)
+		error(ret[2], 2)
+		break
+	end
 end

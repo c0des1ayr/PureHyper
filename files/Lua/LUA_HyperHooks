@@ -51,10 +51,8 @@ end
 --- hooks @func to multiple objects/strings so that they are called when @hookType is run
 function HK.multiHook(hookType, func, mts)
 	for _,mt in ipairs(mts) do
-        if mt ~= nil
-        then
-            HK.AddHook(hookType, func, mt)
-        end
+        if mt ~= nil then
+            HK.addHook(hookType, func, mt) end
 	end
 end
 
@@ -65,8 +63,7 @@ function HK.remHook(hookType, func, extraArg)
 	local key = extraArg or MT_NULL
 	local hooks = HK.hooks[key]
 	if not (hooks and hooks[hookType]) then
-		return
-	end
+		return end
 
 	-- remove a specific function if requested
 	if func then
@@ -80,13 +77,11 @@ function HK.remHook(hookType, func, extraArg)
 
 	-- if list becomes empty or func was nil, remove the entire hookType
 	if (not func) or (#hooks[hookType] == 0) then
-		hooks[hookType] = nil
-	end
+		hooks[hookType] = nil end
 
 	-- remove empty key tables
 	if next(hooks) == nil then
-		HK.hooks[key] = nil
-	end
+		HK.hooks[key] = nil end
 end
 
 HK.customHookTypes = {}

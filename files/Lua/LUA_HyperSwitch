@@ -128,9 +128,9 @@ local AbilitiesReset = {}
 TB.AbilitiesReset = AbilitiesReset
 
 if not rphys == 62 then
-AbilitiesReset.knuckles = function(p)
-	p.charflags = $ & ~SF_MULTIABILITY
-end
+	AbilitiesReset.knuckles = function(p)
+		p.charflags = $ & ~SF_MULTIABILITY
+	end
 end
 AbilitiesReset.nasya = function(p)
 	if p.hyper.nasyamystichyper == true and p.mysticsuper then

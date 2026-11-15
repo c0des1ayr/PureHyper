@@ -6,6 +6,8 @@ local TB = PH.tables
 local FN = PH.functions
 local CA = TB.CharAbilities
 local AR = TB.AbilitiesReset
+local OC = TB.OnlyChecking
+local NM = TB.NoMusic
 local valid = FN.valid
 local playerValid = FN.playerValid
 local superCheck = FN.superCheck
@@ -86,9 +88,10 @@ HK.addHook("PlayerThink", function(p)
 			end
 		end
 		--If you're super, and eligible for hyper bonuses...
-		if superCheck(p) == 2 then
+		if superCheck(p) == 2
+		and OC[skin(p)] ~= true then
 			--Rock that funky music, dawg!
-			if not (p.powers[pw_extralife]) and not (skin(p) == "modernsonic" or skin(p) == "msonic" or skin(p) == "flarethelizard" or skin(p) == "xtreme" or skin(p) == "rabbid" or skin(p) == "flysonic" or p.hassupermusic == true or p.autoexitmusic)
+			if not (p.powers[pw_extralife]) and not (NM[skin(p)] == true or p.hassupermusic == true or p.autoexitmusic)
 			and not p.bot then
 				if skin(p) == "metalsonic" then --Metal gets a little something extra...
 					PlayMetalTrack(p)
@@ -131,7 +134,7 @@ HK.addHook("PlayerThink", function(p)
 			if P_InSpaceSector(p.mo) then
 				p.powers[pw_spacetime] = 100*TICRATE end
 			--Special Interaction with dashmode characters. Entering dashmode causes an explosion.
-			if (p.charflags & SF_DASHMODE) and skin(p) ~= "altsonic" then
+			if (p.charflags & SF_DASHMODE) then
 				if p.dashmode > 3*TICRATE and p.hyper.dashhelper == true then
 					P_NukeEnemies(p.mo, p.mo, 1536*FRACUNIT)
 					if p.hyperflash then
@@ -230,20 +233,22 @@ HK.addHook("PostThinkFrame", function()
 	for p in players.iterate() do
 		if not playerValid(p) then
 			return end
+		if OC[skin(p)] == true then
+			return end
 		if superCheck(p) ~= 2 then
 			return end
 		--Set the correct skincolor for Hyper stuff.
 		--Yet again, metal gets unique stuff. Hope he doesn't get an ego...
 		if skin(p) == "metalsonic" then
 			if p.dashmode <= DASHMODE_THRESHOLD then
-				if p.mo.state < S_PLAY_HYPERTRNS_1 and p.mo.state > S_PLAY_HYPERTRNS_3 then
+				if p.mo.state < S_PLAY_HYPERTRNS_1 or p.mo.state > S_PLAY_HYPERTRNS_3 then
 					p.mo.color = (SKINCOLOR_SUPER_HYPERMET_1 + abs( ( (p.powers[pw_super] >> 1) % 9) - 4))
 				else
 					p.mo.color = p.skincolor
 				end
 			end
 		else
-			if p.mo.state < S_PLAY_HYPERTRNS_1 and p.mo.state > S_PLAY_HYPERTRNS_3 then
+			if p.mo.state < S_PLAY_HYPERTRNS_1 or p.mo.state > S_PLAY_HYPERTRNS_3 then
 				p.mo.color = (SKINCOLOR_SUPER_HYPER_1 + abs( ( (p.powers[pw_super] >> 1) % 9) - 4))
 			else
 				p.mo.color = p.skincolor
